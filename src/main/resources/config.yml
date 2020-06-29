@@ -1,0 +1,8 @@
+# MySQL database settings
+mysql:
+  hostname: localhost
+  port: 3306
+  database: biometag
+  username: biometag
+  password: password
+  useSSL: false
