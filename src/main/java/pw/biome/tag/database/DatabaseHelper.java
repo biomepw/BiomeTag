@@ -94,8 +94,6 @@ public final class DatabaseHelper {
             ImmutableList<Player> playerImmutableList = ImmutableList.copyOf(Bukkit.getServer().getOnlinePlayers());
             playerImmutableList.forEach(player -> TagPlayer.tryLoadFromDatabaseOrCreate(player.getUniqueId(), player.getName()));
 
-            Tag.getInstance().updateScoreboards();
-
             TagPlayer newCurrentTaggedPlayer = TagPlayer.getTaggedPlayer();
 
             if (newCurrentTaggedPlayer == null) return;

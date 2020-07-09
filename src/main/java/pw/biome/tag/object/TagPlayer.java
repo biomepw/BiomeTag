@@ -96,10 +96,8 @@ public class TagPlayer {
         }
 
         globalHintCooldownActive = false;
-        CompletableFuture<Void> saveToDatabaseFuture = saveToDatabase();
-        Tag.getInstance().updateScoreboards();
 
-        return saveToDatabaseFuture;
+        return saveToDatabase();
     }
 
     /**

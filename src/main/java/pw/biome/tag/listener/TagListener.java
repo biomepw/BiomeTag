@@ -49,7 +49,6 @@ public class TagListener implements Listener {
                     Bukkit.broadcastMessage(ChatColor.YELLOW + "Hey look. " + tagPlayer.getUsername() + " has logged in," +
                             " and they're " + ChatColor.RED + "IT! Go kill them!"));
         }
-        Tag.getInstance().updateScoreboards(); // this might be unsafe?
     }
 
     @EventHandler
