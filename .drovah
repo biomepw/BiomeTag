@@ -1,0 +1,2 @@
+[build]
+commands = ["mvn clean package"]
