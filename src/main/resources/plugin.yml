@@ -2,7 +2,7 @@ name: BiomeTag
 main: pw.biome.tag.Tag
 version: ${project.version}
 author: husK
-softdepend: [iChat]
+softdepend: [ iChat ]
 api-version: 1.15
 commands:
   tag:
