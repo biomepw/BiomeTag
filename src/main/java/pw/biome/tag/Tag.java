@@ -49,8 +49,7 @@ public class Tag extends JavaPlugin implements ScoreboardHook {
 
     @Override
     public void restartScoreboardTask() {
-        ImmutableList<Player> playerList = ImmutableList.copyOf(getServer().getOnlinePlayers());
-        for (Player player : playerList) {
+        for (Player player : getServer().getOnlinePlayers()) {
             TagPlayer tagPlayer = TagPlayer.getFromUUID(player.getUniqueId());
             PlayerCache playerCache = PlayerCache.getFromUUID(player.getUniqueId());
 

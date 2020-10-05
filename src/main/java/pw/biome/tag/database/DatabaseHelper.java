@@ -23,9 +23,16 @@ public final class DatabaseHelper {
      */
     public static void setupDatabase() {
         FileConfiguration config = Tag.getInstance().getConfig();
-        mysql = new MySQL(config.getString("mysql.hostname"), config.getString("mysql.port"),
-                config.getString("mysql.database"), config.getString("mysql.username"),
-                config.getString("mysql.password"), "?useSSL=" + config.getBoolean("mysql.useSSL"));
+
+        String hostname = config.getString("mysql.hostname");
+        String port = config.getString("mysql.port");
+        String database = config.getString("mysql.database");
+        boolean useSSL = config.getBoolean("mysql.useSSL");
+        String username = config.getString("mysql.username");
+        String password = config.getString("mysql.password");
+        String jdbcUrl = "jdbc:mysql://" + hostname + ":" + port + "/" + database + "?useSSL=" + useSSL;
+
+        mysql = new MySQL(jdbcUrl, username, password);
     }
 
     /**

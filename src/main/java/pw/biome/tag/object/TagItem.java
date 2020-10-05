@@ -26,8 +26,8 @@ public class TagItem {
         List<String> lore = new ArrayList<>();
 
         lore.add(ChatColor.GREEN + "Welcome to the Tag game! The player who holds this item is IT!");
-        lore.add(ChatColor.GREEN + "It is now your goal to hold onto this tag for as long as possible!");
-        lore.add(ChatColor.GREEN + "Be careful, people can kill you!");
+        lore.add(ChatColor.GREEN + "It is now your goal to go tag another player! (Punch them with the tag!)");
+        lore.add(ChatColor.GREEN + "The winner is whoever holds the tag for the least amount of time!");
 
         itemMeta.setLore(lore);
 

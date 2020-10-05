@@ -2,18 +2,18 @@ package pw.biome.tag.listener;
 
 import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Bukkit;
-import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.AsyncPlayerPreLoginEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.inventory.ItemStack;
 import pw.biome.tag.Tag;
-import pw.biome.tag.database.DatabaseHelper;
 import pw.biome.tag.object.TagItem;
 import pw.biome.tag.object.TagPlayer;
 
@@ -47,7 +47,7 @@ public class TagListener implements Listener {
             tagPlayer.startTimer();
             Bukkit.getScheduler().runTask(Tag.getInstance(), () ->
                     Bukkit.broadcastMessage(ChatColor.YELLOW + "Hey look. " + tagPlayer.getUsername() + " has logged in," +
-                            " and they're " + ChatColor.RED + "IT! Go kill them!"));
+                            " and they're " + ChatColor.RED + "IT!"));
         }
     }
 
@@ -60,7 +60,7 @@ public class TagListener implements Listener {
         }
 
         if (tagPlayer.isTagged()) {
-            event.setQuitMessage(ChatColor.YELLOW + "Pffft. " + tagPlayer.getUsername() + " left? What a pussy");
+            event.setQuitMessage(ChatColor.YELLOW + "Pffft. " + tagPlayer.getUsername() + " left? What a pussy!");
         }
     }
 
@@ -71,9 +71,39 @@ public class TagListener implements Listener {
 
         if (!tagPlayer.isTagged()) return;
 
+        // Don't let people tag animals!
         if (TagItem.equals(player.getInventory().getItemInMainHand()) ||
                 TagItem.equals(player.getInventory().getItemInOffHand())) {
             event.setCancelled(true);
+        }
+    }
+
+    @EventHandler
+    public void taggedPlayer(EntityDamageByEntityEvent event) {
+        if (event.getDamager() instanceof Player && event.getEntity() instanceof Player) {
+            Player damager = (Player) event.getDamager();
+            Player damaged = (Player) event.getEntity();
+
+            TagPlayer damagerTagPlayer = TagPlayer.getFromUUID(damager.getUniqueId());
+            TagPlayer damagedTagPlayer = TagPlayer.getFromUUID(damaged.getUniqueId());
+
+            // If the damager isnt tagged, do nothing
+            if (!damagerTagPlayer.isTagged()) return;
+
+            // If the damager's tagger is the person whacked, do nothing -- don't allow tagger to tag their tagger
+            if (damagerTagPlayer.getTagger().equals(damaged.getUniqueId())) return;
+
+            // Move the tag
+            damagedTagPlayer.setTagged(true);
+            damagerTagPlayer.setTagged(false);
+
+            // Edit inventories
+            damager.getInventory().removeItem(TagItem.getTagItem());
+
+            // If their inv is full, drop it on ground
+            if (damaged.getInventory().addItem(TagItem.getTagItem()).size() != 0) {
+                damaged.getLocation().getWorld().dropItemNaturally(damaged.getLocation(), TagItem.getTagItem());
+            }
         }
     }
 
@@ -82,24 +112,39 @@ public class TagListener implements Listener {
         Player player = event.getEntity();
         TagPlayer tagPlayer = TagPlayer.getFromUUID(player.getUniqueId());
 
+        // Remove tag from the dropped items
         if (tagPlayer.isTagged()) {
-            tagPlayer.setTagged(false);
+            event.getDrops().removeIf(TagItem::equals);
+        }
+    }
+
+    @EventHandler
+    public void playerRespawn(PlayerRespawnEvent event) {
+        Player player = event.getPlayer();
+        TagPlayer tagPlayer = TagPlayer.getFromUUID(player.getUniqueId());
+
+        // Add tag back to player when they respawn
+        if (tagPlayer.isTagged()) {
+            player.getInventory().addItem(TagItem.getTagItem());
         }
     }
 
     @EventHandler
     public void itemPickupEvent(EntityPickupItemEvent event) {
-        LivingEntity livingEntity = event.getEntity();
+        ItemStack itemStack = event.getItem().getItemStack();
 
-        if (livingEntity instanceof Player) {
-            ItemStack itemStack = event.getItem().getItemStack();
-
-            if (TagItem.equals(itemStack)) {
-                Player player = (Player) livingEntity;
+        // Disable picking up tag item across all entities
+        if (TagItem.equals(itemStack)) {
+            if (event.getEntity() instanceof Player) {
+                Player player = (Player) event.getEntity();
                 TagPlayer tagPlayer = TagPlayer.getFromUUID(player.getUniqueId());
 
-                DatabaseHelper.removeTaggedPlayerAndAddTo(tagPlayer);
+                // If the player is tagged, let them pick it up
+                if (tagPlayer.isTagged()) event.setCancelled(false);
+                return;
             }
+
+            event.setCancelled(true);
         }
     }
 }
