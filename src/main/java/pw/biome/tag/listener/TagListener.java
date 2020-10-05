@@ -114,7 +114,7 @@ public class TagListener implements Listener {
 
         // Remove tag from the dropped items
         if (tagPlayer.isTagged()) {
-            event.getDrops().removeIf(TagItem::equals);
+            event.getDrops().remove(TagItem.getTagItem());
         }
     }
 
