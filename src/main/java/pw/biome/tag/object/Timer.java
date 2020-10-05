@@ -28,8 +28,12 @@ public class Timer {
      */
     public void stop() {
         if (currentlyTiming) {
-            timeSeconds = (int) (System.currentTimeMillis() - timeBegin) / 1000;
+            timeSeconds = getTimeElapsed();
             currentlyTiming = false;
         }
+    }
+
+    public int getTimeElapsed() {
+        return (int) (System.currentTimeMillis() - timeBegin) / 1000;
     }
 }

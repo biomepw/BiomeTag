@@ -1,12 +1,10 @@
 package pw.biome.tag.object;
 
-import com.google.common.collect.ImmutableList;
 import lombok.Getter;
 import lombok.Setter;
 import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
 import org.bukkit.scoreboard.Team;
 import pw.biome.tag.Tag;
 import pw.biome.tag.database.DatabaseHelper;
@@ -40,7 +38,6 @@ public class TagPlayer {
     @Setter
     private int timesTagged;
 
-    @Getter
     @Setter
     private int amountOfTimeTagged;
 
@@ -55,9 +52,6 @@ public class TagPlayer {
 
     @Getter
     private boolean dataDoesntExist;
-
-    @Getter
-    private int taskId;
 
     /**
      * Constructor to be used to create TagPlayer objects unless failed to load from database
@@ -76,9 +70,8 @@ public class TagPlayer {
      * Method to change players tagged flag
      *
      * @param isTagged new tagged value
-     * @return a CompletableFuture of the database save task
      */
-    public CompletableFuture<Void> setTagged(boolean isTagged) {
+    public void setTagged(boolean isTagged) {
         this.isTagged = isTagged;
 
         if (isTagged) {
@@ -87,17 +80,13 @@ public class TagPlayer {
             timer.start();
 
             Bukkit.broadcastMessage(ChatColor.YELLOW + "Look out, " + username + " is now " + ChatColor.RED + "IT!");
-
-            taskId = Bukkit.getScheduler().scheduleSyncRepeatingTask(Tag.getInstance(), this::recurringItemCheckTask, 60 * 20, 60 * 20);
         } else {
             stopTimer();
-            Bukkit.getScheduler().cancelTask(taskId);
-            taskId = 0;
         }
 
         globalHintCooldownActive = false;
 
-        return saveToDatabase();
+        saveToDatabase();
     }
 
     /**
@@ -125,6 +114,14 @@ public class TagPlayer {
 
         // If data failed to load, schedule to load again
         if (failedToLoad) Bukkit.getScheduler().runTaskLater(Tag.getInstance(), this::updateDataFromDatabase, 5 * 20);
+    }
+
+    public int getAmountOfTimeTagged() {
+        if (isTagged) {
+            return (int) (System.currentTimeMillis() - timer.getTimeBegin()) / 1000;
+        }
+
+        return this.amountOfTimeTagged;
     }
 
     /**
@@ -191,10 +188,9 @@ public class TagPlayer {
     /**
      * Method used to save to database
      *
-     * @return a CompletableFuture of the progress
      */
-    public CompletableFuture<Void> saveToDatabase() {
-        return CompletableFuture.runAsync(() -> {
+    public void saveToDatabase() {
+        CompletableFuture.runAsync(() -> {
             int tagged = isTagged() ? 1 : 0;
 
             String update = "UPDATE `tag-data` SET `username`='" + getUsername() + "',`times-tagged`='" +
@@ -314,36 +310,5 @@ public class TagPlayer {
      */
     public static void dumpAllData() {
         tagPlayerMap.clear();
-    }
-
-    /**
-     * Recurring method to check if the player that is tagged, still has the tag. If not, check to see who has it and adjust accordingly
-     */
-    public void recurringItemCheckTask() {
-        CompletableFuture.runAsync(() -> {
-            if (!isTagged) return;
-
-            Player player = Bukkit.getPlayer(uuid);
-
-            if (player != null) {
-                if (!TagItem.inventoryContains(player.getInventory().getContents())) {
-                    setTagged(false).thenRun(() -> {
-                        // If there is no other currently tagged player (which there shouldn't be)
-                        DatabaseHelper.getCurrentTaggedPlayer().thenAcceptAsync(currentTaggedPlayer -> {
-                            if (currentTaggedPlayer == null) {
-                                ImmutableList<Player> playerImmutableList = ImmutableList.copyOf(Bukkit.getServer().getOnlinePlayers());
-                                for (Player online : playerImmutableList) {
-                                    ItemStack[] invContents = online.getInventory().getContents();
-
-                                    if (TagItem.inventoryContains(invContents)) {
-                                        setTagged(true);
-                                    }
-                                }
-                            }
-                        });
-                    });
-                }
-            }
-        });
     }
 }
