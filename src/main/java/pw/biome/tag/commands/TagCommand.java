@@ -27,8 +27,11 @@ public class TagCommand implements CommandExecutor {
                     if (args[0].equalsIgnoreCase("give")) {
                         TagPlayer tagPlayer = TagPlayer.getFromUUID(player.getUniqueId());
                         DatabaseHelper.removeTaggedPlayerAndAddTo(tagPlayer);
+                        String formatted = String.format("%s Giving tag to '%s'!", ChatColor.GREEN, tagPlayer.getUsername());
+                        player.sendMessage(formatted);
                     } else if (args[0].equalsIgnoreCase("item")) {
                         player.getInventory().addItem(TagItem.getTagItem());
+                        player.sendMessage(ChatColor.GREEN + "Here's the tag!");
                     } else if (args[0].equalsIgnoreCase("sync")) {
                         DatabaseHelper.syncData().thenRun(() -> player.sendMessage(ChatColor.GREEN + "Data has been synchronised"));
                     }
@@ -38,8 +41,9 @@ public class TagCommand implements CommandExecutor {
 
                         if (tagPlayer != null) {
                             DatabaseHelper.removeTaggedPlayerAndAddTo(tagPlayer);
-
                             tagPlayer.setTimesTagged(tagPlayer.getTimesTagged() - 1);
+                            String formatted = String.format("%s Forcing '%s' as tagged!", ChatColor.GREEN, tagPlayer.getUsername());
+                            player.sendMessage(formatted);
                         }
                     }
                 }
