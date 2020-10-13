@@ -187,7 +187,6 @@ public class TagPlayer {
 
     /**
      * Method used to save to database
-     *
      */
     public void saveToDatabase() {
         CompletableFuture.runAsync(() -> {
@@ -272,6 +271,8 @@ public class TagPlayer {
             if (tagged == 1) isTagged = true;
 
             tagPlayer.isTagged = isTagged; // set directly so we avoid conflict
+
+            if (isTagged) tagPlayer.startTimer();
         } catch (SQLException throwables) {
             tagPlayer.setFailedToLoad(true);
             throwables.printStackTrace();
