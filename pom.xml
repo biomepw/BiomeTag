@@ -43,15 +43,23 @@
                             <relocations>
                                 <relocation>
                                     <pattern>pro.husk</pattern>
-                                    <shadedPattern>pro.husk.biometag.mysql</shadedPattern>
+                                    <shadedPattern>pw.biome.tag.mysql</shadedPattern>
                                 </relocation>
                                 <relocation>
                                     <pattern>com.zaxxer</pattern>
-                                    <shadedPattern>pro.husk.hikaricp</shadedPattern>
+                                    <shadedPattern>pw.biome.tag.hikaricp</shadedPattern>
                                 </relocation>
                                 <relocation>
                                     <pattern>org.slf4j</pattern>
-                                    <shadedPattern>pro.husk.slf4j</shadedPattern>
+                                    <shadedPattern>pw.biome.tag.slf4j</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>co.aikar.commands</pattern>
+                                    <shadedPattern>pw.biome.tag.acf</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>co.aikar.locales</pattern>
+                                    <shadedPattern>pw.biome.tag.locales</shadedPattern>
                                 </relocation>
                             </relocations>
                         </configuration>
@@ -76,6 +84,10 @@
             <id>husk</id>
             <url>https://maven.husk.pro/repository/maven-public/</url>
         </repository>
+        <repository>
+            <id>aikar</id>
+            <url>https://repo.aikar.co/content/groups/aikar/</url>
+        </repository>
     </repositories>
 
     <dependencies>
@@ -88,7 +100,7 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>1.18.12</version>
+            <version>1.18.16</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -100,8 +112,13 @@
         <dependency>
             <groupId>pw.biome</groupId>
             <artifactId>BiomeChat</artifactId>
-            <version>3.1.1</version>
+            <version>3.2.0</version>
             <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>co.aikar</groupId>
+            <artifactId>acf-paper</artifactId>
+            <version>0.5.0-SNAPSHOT</version>
         </dependency>
     </dependencies>
 </project>
