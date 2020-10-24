@@ -187,7 +187,6 @@ public class TagPlayer {
 
     /**
      * Method used to save to database
-     *
      */
     public void saveToDatabase() {
         CompletableFuture.runAsync(() -> {

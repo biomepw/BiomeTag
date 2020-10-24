@@ -1,11 +1,12 @@
 package pw.biome.tag;
 
+import co.aikar.commands.PaperCommandManager;
 import lombok.Getter;
 import net.md_5.bungee.api.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import pw.biome.biomechat.BiomeChat;
-import pw.biome.biomechat.obj.PlayerCache;
+import pw.biome.biomechat.obj.Corp;
 import pw.biome.biomechat.obj.ScoreboardHook;
 import pw.biome.tag.commands.TagCommand;
 import pw.biome.tag.database.DatabaseHelper;
@@ -28,7 +29,8 @@ public class Tag extends JavaPlugin implements ScoreboardHook {
         DatabaseHelper.setupDatabase();
         TagItem.initiateItem();
 
-        getCommand("tag").setExecutor(new TagCommand());
+        PaperCommandManager manager = new PaperCommandManager(instance);
+        manager.registerCommand(new TagCommand());
         getServer().getPluginManager().registerEvents(new TagListener(), this);
 
         BiomeChat biomeChat = BiomeChat.getPlugin();
@@ -50,21 +52,19 @@ public class Tag extends JavaPlugin implements ScoreboardHook {
     public void restartScoreboardTask() {
         for (Player player : getServer().getOnlinePlayers()) {
             TagPlayer tagPlayer = TagPlayer.getFromUUID(player.getUniqueId());
-            PlayerCache playerCache = PlayerCache.getFromUUID(player.getUniqueId());
+            Corp corp = Corp.getCorpForUser(player.getUniqueId());
 
             boolean afk = tagPlayer.isAFK();
 
-            if (playerCache != null) {
-                int amountOfTimeTagged = tagPlayer.getAmountOfTimeTagged() / 60;
-                ChatColor prefix = playerCache.getRank().getPrefix();
+            int amountOfTimeTagged = tagPlayer.getAmountOfTimeTagged() / 60;
+            ChatColor prefix = corp.getPrefix();
 
-                if (tagPlayer.isTagged()) prefix = ChatColor.DARK_RED;
+            if (tagPlayer.isTagged()) prefix = ChatColor.DARK_RED;
 
-                if (afk) {
-                    player.setPlayerListName(ChatColor.GRAY + player.getName() + ChatColor.GOLD + " | " + amountOfTimeTagged);
-                } else {
-                    player.setPlayerListName(prefix + player.getName() + ChatColor.GOLD + " | " + amountOfTimeTagged);
-                }
+            if (afk) {
+                player.setPlayerListName(ChatColor.GRAY + player.getName() + ChatColor.GOLD + " | " + amountOfTimeTagged);
+            } else {
+                player.setPlayerListName(prefix + player.getName() + ChatColor.GOLD + " | " + amountOfTimeTagged);
             }
         }
     }
