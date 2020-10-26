@@ -1,6 +1,5 @@
 package pw.biome.tag.database;
 
-import com.google.common.collect.ImmutableList;
 import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -98,8 +97,9 @@ public final class DatabaseHelper {
         TagPlayer.dumpAllData();
 
         return CompletableFuture.runAsync(() -> {
-            ImmutableList<Player> playerImmutableList = ImmutableList.copyOf(Bukkit.getServer().getOnlinePlayers());
-            playerImmutableList.forEach(player -> TagPlayer.tryLoadFromDatabaseOrCreate(player.getUniqueId(), player.getName()));
+            for (Player player : Bukkit.getOnlinePlayers()) {
+                TagPlayer.tryLoadFromDatabaseOrCreate(player.getUniqueId(), player.getName());
+            }
 
             TagPlayer newCurrentTaggedPlayer = TagPlayer.getTaggedPlayer();
 

@@ -24,6 +24,7 @@ public class TagListener implements Listener {
 
     @EventHandler
     public void asyncPlayerPreLogin(AsyncPlayerPreLoginEvent event) {
+        if (!Tag.isGameRunning()) return;
         UUID uuid = event.getUniqueId();
 
         TagPlayer tagPlayer = TagPlayer.getFromUUID(uuid);
@@ -53,6 +54,7 @@ public class TagListener implements Listener {
 
     @EventHandler
     public void saveDataOnLeave(PlayerQuitEvent event) {
+        if (!Tag.isGameRunning()) return;
         TagPlayer tagPlayer = TagPlayer.getFromUUID(event.getPlayer().getUniqueId());
         if (!tagPlayer.isFailedToLoad()) {
             tagPlayer.stopTimer();
@@ -66,6 +68,7 @@ public class TagListener implements Listener {
 
     @EventHandler
     public void interact(PlayerInteractEvent event) {
+        if (!Tag.isGameRunning()) return;
         Player player = event.getPlayer();
         TagPlayer tagPlayer = TagPlayer.getFromUUID(player.getUniqueId());
 
@@ -80,6 +83,7 @@ public class TagListener implements Listener {
 
     @EventHandler
     public void taggedPlayer(EntityDamageByEntityEvent event) {
+        if (!Tag.isGameRunning()) return;
         if (event.getDamager() instanceof Player && event.getEntity() instanceof Player) {
             Player damager = (Player) event.getDamager();
             Player damaged = (Player) event.getEntity();
@@ -115,6 +119,7 @@ public class TagListener implements Listener {
 
     @EventHandler
     public void playerDeath(PlayerDeathEvent event) {
+        if (!Tag.isGameRunning()) return;
         Player player = event.getEntity();
         TagPlayer tagPlayer = TagPlayer.getFromUUID(player.getUniqueId());
 
@@ -126,6 +131,7 @@ public class TagListener implements Listener {
 
     @EventHandler
     public void playerRespawn(PlayerRespawnEvent event) {
+        if (!Tag.isGameRunning()) return;
         Player player = event.getPlayer();
         TagPlayer tagPlayer = TagPlayer.getFromUUID(player.getUniqueId());
 
@@ -137,6 +143,7 @@ public class TagListener implements Listener {
 
     @EventHandler
     public void itemPickupEvent(EntityPickupItemEvent event) {
+        if (!Tag.isGameRunning()) return;
         ItemStack itemStack = event.getItem().getItemStack();
 
         // Disable picking up tag item across all entities

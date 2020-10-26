@@ -20,6 +20,9 @@ public class Tag extends JavaPlugin implements ScoreboardHook {
     private static Tag instance;
 
     @Getter
+    private static boolean gameRunning;
+
+    @Getter
     private int scoreboardTaskId;
 
     public void onEnable() {
@@ -31,14 +34,8 @@ public class Tag extends JavaPlugin implements ScoreboardHook {
 
         PaperCommandManager manager = new PaperCommandManager(instance);
         manager.registerCommand(new TagCommand());
+
         getServer().getPluginManager().registerEvents(new TagListener(), this);
-
-        BiomeChat biomeChat = BiomeChat.getPlugin();
-        biomeChat.registerHook(this);
-        biomeChat.stopScoreboardTask();
-
-        scoreboardTaskId = getServer().getScheduler()
-                .runTaskTimerAsynchronously(this, this::restartScoreboardTask, (10 * 20), (10 * 20)).getTaskId();
     }
 
     public void onDisable() {
@@ -48,24 +45,55 @@ public class Tag extends JavaPlugin implements ScoreboardHook {
         }
     }
 
+    public void startGame() {
+        if (!gameRunning) {
+            DatabaseHelper.syncData().thenRun(() -> {
+                BiomeChat biomeChat = BiomeChat.getPlugin();
+                biomeChat.registerHook(this);
+                biomeChat.stopScoreboardTask();
+                this.restartScoreboardTask();
+
+                gameRunning = true;
+            });
+        }
+    }
+
+    public void stopGame() {
+        if (gameRunning) {
+            DatabaseHelper.syncData().thenRun(() -> {
+                this.stopScoreboardTask();
+                BiomeChat biomeChat = BiomeChat.getPlugin();
+                biomeChat.unregisterHook(this);
+                biomeChat.restartScoreboardTask();
+
+                gameRunning = false;
+            });
+        }
+    }
+
     @Override
     public void restartScoreboardTask() {
-        for (Player player : getServer().getOnlinePlayers()) {
-            TagPlayer tagPlayer = TagPlayer.getFromUUID(player.getUniqueId());
-            Corp corp = Corp.getCorpForUser(player.getUniqueId());
+        if (scoreboardTaskId == 0) {
+            scoreboardTaskId = getServer().getScheduler()
+                    .runTaskTimerAsynchronously(this, () -> {
+                        for (Player player : getServer().getOnlinePlayers()) {
+                            TagPlayer tagPlayer = TagPlayer.getFromUUID(player.getUniqueId());
+                            Corp corp = Corp.getCorpForUser(player.getUniqueId());
 
-            boolean afk = tagPlayer.isAFK();
+                            boolean afk = tagPlayer.isAFK();
 
-            int amountOfTimeTagged = tagPlayer.getAmountOfTimeTagged() / 60;
-            ChatColor prefix = corp.getPrefix();
+                            int amountOfTimeTagged = tagPlayer.getAmountOfTimeTagged() / 60;
+                            ChatColor prefix = corp.getPrefix();
 
-            if (tagPlayer.isTagged()) prefix = ChatColor.DARK_RED;
+                            if (tagPlayer.isTagged()) prefix = ChatColor.DARK_RED;
 
-            if (afk) {
-                player.setPlayerListName(ChatColor.GRAY + player.getName() + ChatColor.GOLD + " | " + amountOfTimeTagged);
-            } else {
-                player.setPlayerListName(prefix + player.getName() + ChatColor.GOLD + " | " + amountOfTimeTagged);
-            }
+                            if (afk) {
+                                player.setPlayerListName(ChatColor.GRAY + player.getName() + ChatColor.GOLD + " | " + amountOfTimeTagged);
+                            } else {
+                                player.setPlayerListName(prefix + player.getName() + ChatColor.GOLD + " | " + amountOfTimeTagged);
+                            }
+                        }
+                    }, (10 * 20), (10 * 20)).getTaskId();
         }
     }
 
