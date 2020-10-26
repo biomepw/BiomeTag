@@ -99,6 +99,9 @@ public class Tag extends JavaPlugin implements ScoreboardHook {
 
     @Override
     public void stopScoreboardTask() {
-        if (scoreboardTaskId != 0) getServer().getScheduler().cancelTask(scoreboardTaskId);
+        if (scoreboardTaskId != 0) {
+            getServer().getScheduler().cancelTask(scoreboardTaskId);
+            scoreboardTaskId = 0;
+        }
     }
 }
