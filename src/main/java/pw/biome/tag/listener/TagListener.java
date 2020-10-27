@@ -13,6 +13,8 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.inventory.ItemStack;
+import pw.biome.biomechat.obj.Corp;
+import pw.biome.biomechatrelay.util.ChatUtility;
 import pw.biome.tag.Tag;
 import pw.biome.tag.object.TagItem;
 import pw.biome.tag.object.TagPlayer;
@@ -46,9 +48,13 @@ public class TagListener implements Listener {
     private void handleJoin(TagPlayer tagPlayer) {
         if (tagPlayer.isTagged()) {
             tagPlayer.startTimer();
-            Bukkit.getScheduler().runTask(Tag.getInstance(), () ->
-                    Bukkit.broadcastMessage(ChatColor.YELLOW + "Hey look. " + tagPlayer.getUsername() + " has logged in," +
-                            " and they're " + ChatColor.RED + "IT!"));
+            Bukkit.getScheduler().runTask(Tag.getInstance(), () -> {
+                String joinMessage = ChatColor.YELLOW + "Hey look. " + ChatColor.RED +
+                        tagPlayer.getUsername() + ChatColor.YELLOW + " has logged in," +
+                        " and they're " + ChatColor.RED + "IT!";
+                Bukkit.broadcastMessage(joinMessage);
+                ChatUtility.sendToDiscord(joinMessage);
+            });
         }
     }
 
@@ -106,6 +112,16 @@ public class TagListener implements Listener {
             // Move the tag
             damagedTagPlayer.setTagged(true);
             damagerTagPlayer.setTagged(false);
+
+            Corp taggerCorp = Corp.getCorpForUser(damagerTagPlayer.getUuid());
+
+            String tagMessage = ChatColor.GOLD + "Look out! " + taggerCorp.getPrefix() +
+                    damagerTagPlayer.getUsername() + ChatColor.GOLD + " just tagged "
+                    + ChatColor.RED + damagedTagPlayer.getUsername();
+
+            // Broadcast the message to game + discord
+            Bukkit.broadcastMessage(tagMessage);
+            ChatUtility.sendToDiscord(tagMessage);
 
             // Edit inventories
             damager.getInventory().removeItem(TagItem.getTagItem());
