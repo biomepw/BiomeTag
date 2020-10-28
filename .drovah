@@ -2,5 +2,5 @@
 commands = ["mvn clean package"]
 
 [archive]
-files = ["build/libs/BiomeTag-"]
+files = ["target/BiomeTag-"]
 append_buildnumber = true
