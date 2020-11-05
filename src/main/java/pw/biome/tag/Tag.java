@@ -41,7 +41,9 @@ public class Tag extends JavaPlugin implements ScoreboardHook {
     public void onDisable() {
         for (Player player : getServer().getOnlinePlayers()) {
             TagPlayer tagPlayer = TagPlayer.getFromUUID(player.getUniqueId());
-            tagPlayer.saveToDatabase();
+            if (tagPlayer != null) {
+                tagPlayer.saveToDatabase();
+            }
         }
     }
 
