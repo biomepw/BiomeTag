@@ -1,9 +1,7 @@
 package pw.biome.tag.database;
 
 import lombok.Getter;
-import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.entity.Player;
 import pro.husk.mysql.MySQL;
 import pw.biome.tag.Tag;
 import pw.biome.tag.object.TagPlayer;
@@ -79,36 +77,5 @@ public final class DatabaseHelper {
         });
 
         tagPlayer.setTagged(true);
-    }
-
-    /**
-     * Method to sync local cache with database
-     *
-     * @return CompletableFuture of progress
-     */
-    public static CompletableFuture<Void> syncData() {
-        TagPlayer currentTagged = TagPlayer.getTaggedPlayer();
-
-        if (currentTagged != null) {
-            currentTagged.stopTimer();
-            currentTagged.saveToDatabase();
-        }
-
-        TagPlayer.dumpAllData();
-
-        return CompletableFuture.runAsync(() -> {
-            for (Player player : Bukkit.getOnlinePlayers()) {
-                TagPlayer.tryLoadFromDatabaseOrCreate(player.getUniqueId(), player.getName());
-            }
-
-            TagPlayer newCurrentTaggedPlayer = TagPlayer.getTaggedPlayer();
-
-            if (newCurrentTaggedPlayer == null) return;
-
-            newCurrentTaggedPlayer.getTimer().start();
-        }).exceptionally(ex -> {
-            ex.printStackTrace();
-            return null;
-        });
     }
 }

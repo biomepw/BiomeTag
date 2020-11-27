@@ -85,11 +85,4 @@ public class TagCommand extends BaseCommand {
         player.getInventory().addItem(TagItem.getTagItem());
         player.sendMessage(ChatColor.GREEN + "Here's the tag!");
     }
-
-    @Subcommand("sync")
-    @CommandPermission("tag.admin")
-    @Description("Forces the local cache to be dropped and to trust the DB instead")
-    public void onTagSync(CommandSender sender) {
-        DatabaseHelper.syncData().thenRun(() -> sender.sendMessage(ChatColor.GREEN + "Data has been synchronised"));
-    }
 }

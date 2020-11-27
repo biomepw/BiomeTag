@@ -20,29 +20,19 @@ import pw.biome.tag.object.TagItem;
 import pw.biome.tag.object.TagPlayer;
 
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 
 public class TagListener implements Listener {
 
     @EventHandler
     public void asyncPlayerPreLogin(AsyncPlayerPreLoginEvent event) {
         if (!Tag.isGameRunning()) return;
-        UUID uuid = event.getUniqueId();
 
-        TagPlayer tagPlayer = TagPlayer.getFromUUID(uuid);
+        UUID uuid = event.getUniqueId();
         String username = event.getName();
 
-        if (tagPlayer == null) {
-            CompletableFuture<TagPlayer> tagPlayerCompletableFuture = CompletableFuture.supplyAsync(() ->
-                    TagPlayer.tryLoadFromDatabaseOrCreate(uuid, username)).exceptionally(exception -> {
-                exception.printStackTrace();
-                return null;
-            });
+        TagPlayer tagPlayer = TagPlayer.getOrCreate(uuid, username);
 
-            tagPlayerCompletableFuture.thenAcceptAsync(this::handleJoin);
-        } else {
-            handleJoin(tagPlayer);
-        }
+        handleJoin(tagPlayer);
     }
 
     private void handleJoin(TagPlayer tagPlayer) {
@@ -61,11 +51,9 @@ public class TagListener implements Listener {
     @EventHandler
     public void saveDataOnLeave(PlayerQuitEvent event) {
         if (!Tag.isGameRunning()) return;
+
         TagPlayer tagPlayer = TagPlayer.getFromUUID(event.getPlayer().getUniqueId());
-        if (!tagPlayer.isFailedToLoad()) {
-            tagPlayer.stopTimer();
-            tagPlayer.saveToDatabase();
-        }
+        tagPlayer.stopTimer();
 
         if (tagPlayer.isTagged()) {
             event.setQuitMessage(ChatColor.YELLOW + "Pffft. " + tagPlayer.getUsername() + " left? What a pussy!");
