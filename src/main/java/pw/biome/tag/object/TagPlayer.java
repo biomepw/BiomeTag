@@ -31,21 +31,17 @@ public class TagPlayer implements AnnotatedSQLMember {
     private final UUID uuid;
 
     @Getter
-    @Setter
     @DatabaseValue("tagger")
     private UUID tagger;
 
     @Getter
-    @Setter
     @DatabaseValue("username")
-    private String username;
+    private final String username;
 
     @Getter
-    @Setter
     @DatabaseValue("times-tagged")
     private int timesTagged;
 
-    @Setter
     @DatabaseValue("total-time-tagged")
     private int amountOfTimeTagged;
 
@@ -53,10 +49,11 @@ public class TagPlayer implements AnnotatedSQLMember {
     private final Timer timer;
 
     @Getter
+    @DatabaseValue("tagged")
     private boolean isTagged;
 
     @Getter
-    private boolean loading = true;
+    private final SinkProcessor sinkProcessor;
 
     /**
      * Constructor to be used to create TagPlayer objects unless failed to load from database
@@ -67,11 +64,21 @@ public class TagPlayer implements AnnotatedSQLMember {
         this.uuid = uuid;
         this.username = username;
         this.timer = new Timer();
+        sinkProcessor = new SinkProcessor(this);
 
-        SinkProcessor sinkProcessor = new SinkProcessor(this, () -> {
-            tagPlayerMap.put(uuid, this);
-            loading = false;
-        });
+        sinkProcessor.getLoadFromDatabaseFuture().thenRun(() -> System.out.println("loaded for users : " + username));
+
+        tagPlayerMap.put(uuid, this);
+    }
+
+    public void setTagger(UUID tagger) {
+        this.tagger = tagger;
+        sinkProcessor.setDirty(true);
+    }
+
+    public void setTimesTagged(int newTimesTagged) {
+        this.timesTagged = newTimesTagged;
+        sinkProcessor.setDirty(true);
     }
 
     /**
@@ -87,12 +94,14 @@ public class TagPlayer implements AnnotatedSQLMember {
 
             timer.start();
 
-            Bukkit.broadcastMessage(ChatColor.YELLOW + "Look out, " + username + " is now " + ChatColor.RED + "IT!");
+            Bukkit.broadcastMessage(ChatColor.YELLOW + "Look out, " + username +
+                    ChatColor.YELLOW + " is now " + ChatColor.RED + "IT!");
         } else {
             stopTimer();
         }
 
         globalHintCooldownActive = false;
+        sinkProcessor.setDirty(true);
     }
 
     /**
@@ -140,6 +149,7 @@ public class TagPlayer implements AnnotatedSQLMember {
      */
     public void addTimeToAmountOfTimeTagged(int seconds) {
         amountOfTimeTagged += seconds;
+        sinkProcessor.setDirty(true);
     }
 
     /**
@@ -155,7 +165,9 @@ public class TagPlayer implements AnnotatedSQLMember {
     public static TagPlayer getOrCreate(UUID uuid, String username) {
         TagPlayer tagPlayer = getFromUUID(uuid);
 
-        if (tagPlayer == null) tagPlayer = new TagPlayer(uuid, username);
+        if (tagPlayer == null) {
+            tagPlayer = new TagPlayer(uuid, username);
+        }
 
         return tagPlayer;
     }

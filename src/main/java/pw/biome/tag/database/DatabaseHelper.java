@@ -70,7 +70,7 @@ public final class DatabaseHelper {
         });
 
         // Add current tag to player
-        String tagUpdate = "UPDATE `tag-data` SET `tagged` = 1 WHERE uuid LIKE '" + tagPlayer.getUuid().toString() + "';";
+        String tagUpdate = "UPDATE `tag-data` SET `tagged` = 1 WHERE uuid = '" + tagPlayer.getUuid().toString() + "';";
         mysql.updateAsync(tagUpdate).exceptionally(exception -> {
             exception.printStackTrace();
             return 0;

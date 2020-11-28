@@ -2,10 +2,12 @@ package pw.biome.tag.commands;
 
 import co.aikar.commands.BaseCommand;
 import co.aikar.commands.annotation.CommandAlias;
+import co.aikar.commands.annotation.CommandCompletion;
 import co.aikar.commands.annotation.CommandPermission;
 import co.aikar.commands.annotation.Default;
 import co.aikar.commands.annotation.Description;
 import co.aikar.commands.annotation.Subcommand;
+import co.aikar.commands.bukkit.contexts.OnlinePlayer;
 import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
@@ -61,20 +63,19 @@ public class TagCommand extends BaseCommand {
     public void onTagGive(Player player) {
         TagPlayer tagPlayer = TagPlayer.getFromUUID(player.getUniqueId());
         DatabaseHelper.removeTaggedPlayerAndAddTo(tagPlayer);
-        String formatted = String.format("%s Giving tag to '%s'!", ChatColor.GREEN, tagPlayer.getUsername());
-        player.sendMessage(formatted);
+        player.sendMessage(ChatColor.GREEN + "Giving tag to '" + tagPlayer.getUsername() + ChatColor.GREEN + "'!");
     }
 
     @Subcommand("force")
     @CommandPermission("tag.admin")
+    @CommandCompletion("@players")
     @Description("Forces the tagged player to the given target")
-    public void onTagForce(CommandSender sender, Player target) {
-        TagPlayer tagPlayer = TagPlayer.getFromUUID(target.getUniqueId());
+    public void onTagForce(CommandSender sender, OnlinePlayer target) {
+        TagPlayer tagPlayer = TagPlayer.getFromUUID(target.getPlayer().getUniqueId());
         if (tagPlayer != null) {
             DatabaseHelper.removeTaggedPlayerAndAddTo(tagPlayer);
             tagPlayer.setTimesTagged(tagPlayer.getTimesTagged() - 1);
-            String formatted = String.format("%s Forcing '%s' as tagged!", ChatColor.GREEN, tagPlayer.getUsername());
-            sender.sendMessage(formatted);
+            sender.sendMessage(ChatColor.GREEN + "Forcing '" + tagPlayer.getUsername() + ChatColor.GREEN + "' as tagged!");
         }
     }
 

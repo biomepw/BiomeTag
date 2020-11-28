@@ -25,6 +25,8 @@ public class Tag extends JavaPlugin implements ScoreboardHook {
     @Getter
     private int scoreboardTaskId;
 
+    private PaperCommandManager manager;
+
     public void onEnable() {
         instance = this;
         saveDefaultConfig();
@@ -32,10 +34,14 @@ public class Tag extends JavaPlugin implements ScoreboardHook {
         DatabaseHelper.setupDatabase();
         TagItem.initiateItem();
 
-        PaperCommandManager manager = new PaperCommandManager(instance);
+        manager = new PaperCommandManager(instance);
         manager.registerCommand(new TagCommand());
 
         getServer().getPluginManager().registerEvents(new TagListener(), this);
+    }
+
+    public void onDisable() {
+        manager.unregisterCommands();
     }
 
     public void startGame() {
@@ -44,6 +50,11 @@ public class Tag extends JavaPlugin implements ScoreboardHook {
             biomeChat.registerHook(this);
             biomeChat.stopScoreboardTask();
             this.restartScoreboardTask();
+
+            // Create all players on game start
+            getServer().getOnlinePlayers().forEach(player -> {
+                TagPlayer tagPlayer = TagPlayer.getOrCreate(player.getUniqueId(), player.getName());
+            });
 
             gameRunning = true;
         }

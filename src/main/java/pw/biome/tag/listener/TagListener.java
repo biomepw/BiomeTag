@@ -36,16 +36,18 @@ public class TagListener implements Listener {
     }
 
     private void handleJoin(TagPlayer tagPlayer) {
-        if (tagPlayer.isTagged()) {
-            tagPlayer.startTimer();
-            Bukkit.getScheduler().runTask(Tag.getInstance(), () -> {
-                String joinMessage = ChatColor.YELLOW + "Hey look. " + ChatColor.RED +
-                        tagPlayer.getUsername() + ChatColor.YELLOW + " has logged in," +
-                        " and they're " + ChatColor.RED + "IT!";
-                Bukkit.broadcastMessage(joinMessage);
-                ChatUtility.sendToDiscord(joinMessage);
-            });
-        }
+        tagPlayer.getSinkProcessor().getLoadFromDatabaseFuture().thenRun(() -> {
+            if (tagPlayer.isTagged()) {
+                tagPlayer.startTimer();
+                Bukkit.getScheduler().runTask(Tag.getInstance(), () -> {
+                    String joinMessage = ChatColor.YELLOW + "Hey look. " + ChatColor.RED +
+                            tagPlayer.getUsername() + ChatColor.YELLOW + " has logged in," +
+                            " and they're " + ChatColor.RED + "IT!";
+                    Bukkit.broadcastMessage(joinMessage);
+                    ChatUtility.sendToDiscord(joinMessage);
+                });
+            }
+        });
     }
 
     @EventHandler
