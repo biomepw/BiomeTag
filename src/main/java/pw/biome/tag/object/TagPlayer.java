@@ -64,9 +64,8 @@ public class TagPlayer implements AnnotatedSQLMember {
         this.uuid = uuid;
         this.username = username;
         this.timer = new Timer();
-        sinkProcessor = new SinkProcessor(this);
-
-        sinkProcessor.getLoadFromDatabaseFuture().thenRun(() -> System.out.println("loaded for users : " + username));
+        sinkProcessor = new SinkProcessor(this,
+                () -> System.out.println("Loaded information from db for user: " + username));
 
         tagPlayerMap.put(uuid, this);
     }
