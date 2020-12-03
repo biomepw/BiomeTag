@@ -2,7 +2,7 @@ name: BiomeTag
 main: pw.biome.tag.Tag
 version: ${project.version}
 author: husK
-depend: [ BiomeChat, BiomeChatRelay ]
+depend: [ BiomeChat ]
 api-version: 1.15
 commands:
   tag:
