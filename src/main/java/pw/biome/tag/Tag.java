@@ -25,6 +25,8 @@ public class Tag extends JavaPlugin implements ScoreboardHook {
     @Getter
     private int scoreboardTaskId;
 
+    private PaperCommandManager manager;
+
     public void onEnable() {
         instance = this;
         saveDefaultConfig();
@@ -32,44 +34,40 @@ public class Tag extends JavaPlugin implements ScoreboardHook {
         DatabaseHelper.setupDatabase();
         TagItem.initiateItem();
 
-        PaperCommandManager manager = new PaperCommandManager(instance);
+        manager = new PaperCommandManager(instance);
         manager.registerCommand(new TagCommand());
 
         getServer().getPluginManager().registerEvents(new TagListener(), this);
     }
 
     public void onDisable() {
-        for (Player player : getServer().getOnlinePlayers()) {
-            TagPlayer tagPlayer = TagPlayer.getFromUUID(player.getUniqueId());
-            if (tagPlayer != null) {
-                tagPlayer.saveToDatabase();
-            }
-        }
+        manager.unregisterCommands();
     }
 
     public void startGame() {
         if (!gameRunning) {
-            DatabaseHelper.syncData().thenRun(() -> {
-                BiomeChat biomeChat = BiomeChat.getPlugin();
-                biomeChat.registerHook(this);
-                biomeChat.stopScoreboardTask();
-                this.restartScoreboardTask();
+            BiomeChat biomeChat = BiomeChat.getPlugin();
+            biomeChat.registerHook(this);
+            biomeChat.stopScoreboardTask();
+            this.restartScoreboardTask();
 
-                gameRunning = true;
+            // Create all players on game start
+            getServer().getOnlinePlayers().forEach(player -> {
+                TagPlayer tagPlayer = TagPlayer.getOrCreate(player.getUniqueId(), player.getName());
             });
+
+            gameRunning = true;
         }
     }
 
     public void stopGame() {
         if (gameRunning) {
-            DatabaseHelper.syncData().thenRun(() -> {
-                this.stopScoreboardTask();
-                BiomeChat biomeChat = BiomeChat.getPlugin();
-                biomeChat.unregisterHook(this);
-                biomeChat.restartScoreboardTask();
+            this.stopScoreboardTask();
+            BiomeChat biomeChat = BiomeChat.getPlugin();
+            biomeChat.unregisterHook(this);
+            biomeChat.restartScoreboardTask();
 
-                gameRunning = false;
-            });
+            gameRunning = false;
         }
     }
 

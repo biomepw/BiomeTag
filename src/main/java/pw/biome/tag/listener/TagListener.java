@@ -14,58 +14,46 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.inventory.ItemStack;
 import pw.biome.biomechat.obj.Corp;
-import pw.biome.biomechatrelay.util.ChatUtility;
 import pw.biome.tag.Tag;
 import pw.biome.tag.object.TagItem;
 import pw.biome.tag.object.TagPlayer;
 
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 
 public class TagListener implements Listener {
 
     @EventHandler
     public void asyncPlayerPreLogin(AsyncPlayerPreLoginEvent event) {
         if (!Tag.isGameRunning()) return;
-        UUID uuid = event.getUniqueId();
 
-        TagPlayer tagPlayer = TagPlayer.getFromUUID(uuid);
+        UUID uuid = event.getUniqueId();
         String username = event.getName();
 
-        if (tagPlayer == null) {
-            CompletableFuture<TagPlayer> tagPlayerCompletableFuture = CompletableFuture.supplyAsync(() ->
-                    TagPlayer.tryLoadFromDatabaseOrCreate(uuid, username)).exceptionally(exception -> {
-                exception.printStackTrace();
-                return null;
-            });
+        TagPlayer tagPlayer = TagPlayer.getOrCreate(uuid, username);
 
-            tagPlayerCompletableFuture.thenAcceptAsync(this::handleJoin);
-        } else {
-            handleJoin(tagPlayer);
-        }
+        handleJoin(tagPlayer);
     }
 
     private void handleJoin(TagPlayer tagPlayer) {
-        if (tagPlayer.isTagged()) {
-            tagPlayer.startTimer();
-            Bukkit.getScheduler().runTask(Tag.getInstance(), () -> {
-                String joinMessage = ChatColor.YELLOW + "Hey look. " + ChatColor.RED +
-                        tagPlayer.getUsername() + ChatColor.YELLOW + " has logged in," +
-                        " and they're " + ChatColor.RED + "IT!";
-                Bukkit.broadcastMessage(joinMessage);
-                ChatUtility.sendToDiscord(joinMessage);
-            });
-        }
+        tagPlayer.getSinkProcessor().getLoadFuture().thenRun(() -> {
+            if (tagPlayer.isTagged()) {
+                tagPlayer.startTimer();
+                Bukkit.getScheduler().runTask(Tag.getInstance(), () -> {
+                    String joinMessage = ChatColor.YELLOW + "Hey look. " + ChatColor.RED +
+                            tagPlayer.getUsername() + ChatColor.YELLOW + " has logged in," +
+                            " and they're " + ChatColor.RED + "IT!";
+                    Bukkit.broadcastMessage(joinMessage);
+                });
+            }
+        });
     }
 
     @EventHandler
     public void saveDataOnLeave(PlayerQuitEvent event) {
         if (!Tag.isGameRunning()) return;
+
         TagPlayer tagPlayer = TagPlayer.getFromUUID(event.getPlayer().getUniqueId());
-        if (!tagPlayer.isFailedToLoad()) {
-            tagPlayer.stopTimer();
-            tagPlayer.saveToDatabase();
-        }
+        tagPlayer.stopTimer();
 
         if (tagPlayer.isTagged()) {
             event.setQuitMessage(ChatColor.YELLOW + "Pffft. " + tagPlayer.getUsername() + " left? What a pussy!");
@@ -119,9 +107,8 @@ public class TagListener implements Listener {
                     damagerTagPlayer.getUsername() + ChatColor.GOLD + " just tagged "
                     + ChatColor.RED + damagedTagPlayer.getUsername();
 
-            // Broadcast the message to game + discord
+            // Broadcast the message to game
             Bukkit.broadcastMessage(tagMessage);
-            ChatUtility.sendToDiscord(tagMessage);
 
             // Edit inventories
             damager.getInventory().removeItem(TagItem.getTagItem());

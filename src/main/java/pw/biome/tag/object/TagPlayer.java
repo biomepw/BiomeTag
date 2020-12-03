@@ -6,16 +6,19 @@ import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.scoreboard.Team;
-import pw.biome.tag.Tag;
+import pro.husk.mysql.MySQL;
+import pro.husk.sqlannotations.AnnotatedSQLMember;
+import pro.husk.sqlannotations.SinkProcessor;
+import pro.husk.sqlannotations.annotations.DatabaseInfo;
+import pro.husk.sqlannotations.annotations.DatabaseValue;
+import pro.husk.sqlannotations.annotations.UniqueKey;
 import pw.biome.tag.database.DatabaseHelper;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class TagPlayer {
+@DatabaseInfo(database = "biometag", table = "tag-data")
+public class TagPlayer implements AnnotatedSQLMember {
 
     private static final ConcurrentHashMap<UUID, TagPlayer> tagPlayerMap = new ConcurrentHashMap<>();
 
@@ -24,34 +27,33 @@ public class TagPlayer {
     private static boolean globalHintCooldownActive;
 
     @Getter
+    @UniqueKey("uuid")
     private final UUID uuid;
 
     @Getter
-    @Setter
+    @DatabaseValue("tagger")
     private UUID tagger;
 
     @Getter
-    @Setter
-    private String username;
+    @DatabaseValue("username")
+    private final String username;
 
     @Getter
-    @Setter
+    @DatabaseValue("times-tagged")
     private int timesTagged;
 
-    @Setter
+    @DatabaseValue("total-time-tagged")
     private int amountOfTimeTagged;
 
     @Getter
     private final Timer timer;
 
     @Getter
+    @DatabaseValue("tagged")
     private boolean isTagged;
 
     @Getter
-    private boolean failedToLoad;
-
-    @Getter
-    private boolean dataDoesntExist;
+    private final SinkProcessor sinkProcessor;
 
     /**
      * Constructor to be used to create TagPlayer objects unless failed to load from database
@@ -62,8 +64,20 @@ public class TagPlayer {
         this.uuid = uuid;
         this.username = username;
         this.timer = new Timer();
+        sinkProcessor = new SinkProcessor(this,
+                () -> System.out.println("Loaded information from db for user: " + username));
 
         tagPlayerMap.put(uuid, this);
+    }
+
+    public void setTagger(UUID tagger) {
+        this.tagger = tagger;
+        sinkProcessor.setDirty(true);
+    }
+
+    public void setTimesTagged(int newTimesTagged) {
+        this.timesTagged = newTimesTagged;
+        sinkProcessor.setDirty(true);
     }
 
     /**
@@ -79,14 +93,14 @@ public class TagPlayer {
 
             timer.start();
 
-            Bukkit.broadcastMessage(ChatColor.YELLOW + "Look out, " + username + " is now " + ChatColor.RED + "IT!");
+            Bukkit.broadcastMessage(ChatColor.YELLOW + "Look out, " + username +
+                    ChatColor.YELLOW + " is now " + ChatColor.RED + "IT!");
         } else {
             stopTimer();
         }
 
         globalHintCooldownActive = false;
-
-        saveToDatabase();
+        sinkProcessor.setDirty(true);
     }
 
     /**
@@ -102,18 +116,6 @@ public class TagPlayer {
     public void stopTimer() {
         timer.stop();
         addTimeToAmountOfTimeTagged(timer.getTimeSeconds());
-    }
-
-    /**
-     * Method to flag data to be scheduled to retry loading
-     *
-     * @param failedToLoad new failed to load value
-     */
-    public void setFailedToLoad(boolean failedToLoad) {
-        this.failedToLoad = failedToLoad;
-
-        // If data failed to load, schedule to load again
-        if (failedToLoad) Bukkit.getScheduler().runTaskLater(Tag.getInstance(), this::updateDataFromDatabase, 5 * 20);
     }
 
     public int getAmountOfTimeTagged() {
@@ -146,61 +148,7 @@ public class TagPlayer {
      */
     public void addTimeToAmountOfTimeTagged(int seconds) {
         amountOfTimeTagged += seconds;
-    }
-
-    /**
-     * Method to update data from database, utilised in /tag sync
-     */
-    public void updateDataFromDatabase() {
-        String query = "SELECT * FROM `tag-data` WHERE `uuid` LIKE '" + uuid.toString() + "';";
-
-        if (isTagged) return; // don't update while tagged as stats will still increment
-
-        CompletableFuture.runAsync(() -> {
-            try {
-                DatabaseHelper.getMysql().query(query, resultSet -> {
-                    while (resultSet.next()) {
-                        setTimesTagged(resultSet.getInt("times-tagged"));
-                        setAmountOfTimeTagged(resultSet.getInt("total-time-tagged"));
-                        setTagger(UUID.fromString(resultSet.getString("tagger")));
-                        int tagged = resultSet.getInt("tagged");
-                        boolean isTagged = false;
-
-                        if (tagged == 1) isTagged = true;
-
-                        this.isTagged = isTagged; // set directly so we avoid conflict
-                    }
-                    if (failedToLoad) {
-                        failedToLoad = false;
-                    }
-                });
-            } catch (SQLException throwables) {
-                System.out.println("An error occurred while fetching user's data from the database. " +
-                        "We will try recover. Here's the stack trace");
-
-                throwables.printStackTrace();
-
-                setFailedToLoad(true);
-            }
-        });
-    }
-
-    /**
-     * Method used to save to database
-     */
-    public void saveToDatabase() {
-        CompletableFuture.runAsync(() -> {
-            int tagged = isTagged() ? 1 : 0;
-
-            String update = "UPDATE `tag-data` SET `username`='" + getUsername() + "',`times-tagged`='" +
-                    getTimesTagged() + "',`total-time-tagged`='" + getAmountOfTimeTagged() +
-                    "',`tagged`=" + tagged + ", `tagger`='" + getTagger().toString() + "' WHERE `uuid` LIKE '" + getUuid().toString() + "';";
-
-            DatabaseHelper.getMysql().updateAsync(update).exceptionally(exception -> {
-                exception.printStackTrace();
-                return 0;
-            });
-        });
+        sinkProcessor.setDirty(true);
     }
 
     /**
@@ -213,67 +161,11 @@ public class TagPlayer {
         return tagPlayerMap.get(uuid);
     }
 
-    /**
-     * Method to try and load the player data from database
-     *
-     * @param uuid to try load from database
-     * @return TagPlayer that was loaded
-     */
-    public static TagPlayer tryLoadFromDatabaseOrCreate(UUID uuid, String username) {
-        TagPlayer tagPlayer = tryLoadFromDatabase(uuid, username);
+    public static TagPlayer getOrCreate(UUID uuid, String username) {
+        TagPlayer tagPlayer = getFromUUID(uuid);
 
-        if (tagPlayer.dataDoesntExist) {
-            // Set the values we do know
-            tagPlayer.setUsername(username);
-            tagPlayer.setTagger(UUID.fromString("00000000-0000-0000-0000-000000000000"));
-
-            String insert = "INSERT INTO `tag-data` (`uuid`, `username`, `times-tagged`, `total-time-tagged`, `tagged`, `tagger`)" +
-                    " VALUES ('" + uuid.toString() + "', '" + tagPlayer.getUsername() + "', '0', '0', '0', '" + tagPlayer.getTagger() + "');";
-            DatabaseHelper.getMysql().updateAsync(insert);
-
-            // Data exists now!
-            tagPlayer.dataDoesntExist = false;
-        }
-
-        return tagPlayer;
-    }
-
-    /**
-     * Try and load TagPlayer from database
-     *
-     * @param uuid of player to try load
-     * @return TagPlayer or null if not found
-     */
-    public static TagPlayer tryLoadFromDatabase(UUID uuid, String username) {
-        TagPlayer tagPlayer;
-
-        if (tagPlayerMap.get(uuid) == null) {
+        if (tagPlayer == null) {
             tagPlayer = new TagPlayer(uuid, username);
-        } else {
-            tagPlayer = tagPlayerMap.get(uuid);
-        }
-
-        String query = "SELECT * FROM `tag-data` WHERE `uuid` LIKE '" + uuid.toString() + "';";
-
-        try (ResultSet resultSet = DatabaseHelper.getMysql().query(query)) {
-            if (!resultSet.next()) {
-                tagPlayer.dataDoesntExist = true;
-                return tagPlayer;
-            }
-
-            tagPlayer.setUsername(resultSet.getString("username"));
-            tagPlayer.setTimesTagged(resultSet.getInt("times-tagged"));
-            tagPlayer.setAmountOfTimeTagged(resultSet.getInt("total-time-tagged"));
-            tagPlayer.setTagger(UUID.fromString(resultSet.getString("tagger")));
-            int tagged = resultSet.getInt("tagged");
-            boolean isTagged = false;
-
-            if (tagged == 1) isTagged = true;
-
-            tagPlayer.isTagged = isTagged; // set directly so we avoid conflict
-        } catch (SQLException throwables) {
-            tagPlayer.setFailedToLoad(true);
-            throwables.printStackTrace();
         }
 
         return tagPlayer;
@@ -291,23 +183,8 @@ public class TagPlayer {
         return null; // shouldn't ever be null
     }
 
-    /**
-     * Method to return TagPlayer from name
-     *
-     * @param name of TagPlayer
-     * @return TagPlayer (if found)
-     */
-    public static TagPlayer getFromName(String name) {
-        for (TagPlayer tagPlayer : tagPlayerMap.values()) {
-            if (tagPlayer.getUsername().equals(name)) return tagPlayer;
-        }
-        return null;
-    }
-
-    /**
-     * Method used to dump all TagPlayer data without saving
-     */
-    public static void dumpAllData() {
-        tagPlayerMap.clear();
+    @Override
+    public MySQL getMySQL() {
+        return DatabaseHelper.getMysql();
     }
 }
