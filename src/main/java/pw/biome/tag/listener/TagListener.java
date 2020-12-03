@@ -14,7 +14,6 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.inventory.ItemStack;
 import pw.biome.biomechat.obj.Corp;
-import pw.biome.biomechatrelay.util.ChatUtility;
 import pw.biome.tag.Tag;
 import pw.biome.tag.object.TagItem;
 import pw.biome.tag.object.TagPlayer;
@@ -36,7 +35,7 @@ public class TagListener implements Listener {
     }
 
     private void handleJoin(TagPlayer tagPlayer) {
-        tagPlayer.getSinkProcessor().getLoadFromDatabaseFuture().thenRun(() -> {
+        tagPlayer.getSinkProcessor().getLoadFuture().thenRun(() -> {
             if (tagPlayer.isTagged()) {
                 tagPlayer.startTimer();
                 Bukkit.getScheduler().runTask(Tag.getInstance(), () -> {
@@ -44,7 +43,6 @@ public class TagListener implements Listener {
                             tagPlayer.getUsername() + ChatColor.YELLOW + " has logged in," +
                             " and they're " + ChatColor.RED + "IT!";
                     Bukkit.broadcastMessage(joinMessage);
-                    ChatUtility.sendToDiscord(joinMessage);
                 });
             }
         });
@@ -109,9 +107,8 @@ public class TagListener implements Listener {
                     damagerTagPlayer.getUsername() + ChatColor.GOLD + " just tagged "
                     + ChatColor.RED + damagedTagPlayer.getUsername();
 
-            // Broadcast the message to game + discord
+            // Broadcast the message to game
             Bukkit.broadcastMessage(tagMessage);
-            ChatUtility.sendToDiscord(tagMessage);
 
             // Edit inventories
             damager.getInventory().removeItem(TagItem.getTagItem());
