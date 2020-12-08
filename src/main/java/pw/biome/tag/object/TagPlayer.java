@@ -4,14 +4,13 @@ import lombok.Getter;
 import lombok.Setter;
 import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Bukkit;
-import org.bukkit.entity.Player;
-import org.bukkit.scoreboard.Team;
 import pro.husk.mysql.MySQL;
 import pro.husk.sqlannotations.AnnotatedSQLMember;
 import pro.husk.sqlannotations.SinkProcessor;
 import pro.husk.sqlannotations.annotations.DatabaseInfo;
 import pro.husk.sqlannotations.annotations.DatabaseValue;
 import pro.husk.sqlannotations.annotations.UniqueKey;
+import pw.biome.biomechat.BiomeChat;
 import pw.biome.tag.database.DatabaseHelper;
 
 import java.util.UUID;
@@ -133,13 +132,7 @@ public class TagPlayer implements AnnotatedSQLMember {
      * @return whether or not the player is AFK
      */
     public boolean isAFK() {
-        Player player = Bukkit.getPlayer(uuid);
-
-        if (player == null) return false;
-        Team team = player.getScoreboard().getTeam("hc_afk");
-        if (team == null) return false;
-
-        return team.hasEntry(player.getName());
+        return BiomeChat.getPlugin().isAFK(Bukkit.getPlayer(uuid));
     }
 
     /**
