@@ -32,7 +32,7 @@ public class TagPlayer implements AnnotatedSQLMember {
 
     @Getter
     @DatabaseValue("tagger")
-    private UUID tagger;
+    private String tagger;
 
     @Getter
     @DatabaseValue("username")
@@ -64,6 +64,7 @@ public class TagPlayer implements AnnotatedSQLMember {
         this.uuid = uuid;
         this.username = username;
         this.timer = new Timer();
+
         sinkProcessor = new SinkProcessor(this,
                 () -> System.out.println("Loaded information from db for user: " + username));
 
@@ -71,7 +72,7 @@ public class TagPlayer implements AnnotatedSQLMember {
     }
 
     public void setTagger(UUID tagger) {
-        this.tagger = tagger;
+        this.tagger = tagger.toString();
         sinkProcessor.setDirty(true);
     }
 

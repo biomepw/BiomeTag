@@ -86,4 +86,10 @@ public class TagCommand extends BaseCommand {
         player.getInventory().addItem(TagItem.getTagItem());
         player.sendMessage(ChatColor.GREEN + "Here's the tag!");
     }
+
+    @Subcommand("debug")
+    @CommandPermission("tag.admin")
+    public void debug(Player player) {
+        player.sendMessage(ChatColor.GREEN + "Tag game is running? " + Tag.isGameRunning());
+    }
 }

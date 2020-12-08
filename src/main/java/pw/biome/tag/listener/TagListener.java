@@ -89,7 +89,10 @@ public class TagListener implements Listener {
             if (!damagerTagPlayer.isTagged()) return;
 
             // If the damager's tagger is the person whacked, do nothing -- don't allow tagger to tag their tagger
-            if (damagerTagPlayer.getTagger() != null && damagedTagPlayer.getTagger().equals(damaged.getUniqueId())) return;
+            if (damagerTagPlayer.getTagger() != null &&
+                    UUID.fromString(damagedTagPlayer.getTagger()).equals(damaged.getUniqueId())) {
+                return;
+            }
 
             // Disable tagging afk players
             if (damagedTagPlayer.isAFK()) {
