@@ -31,6 +31,8 @@ public class Tag extends JavaPlugin implements ScoreboardHook {
         instance = this;
         saveDefaultConfig();
 
+        gameRunning = getConfig().getBoolean("tag.game-running");
+
         DatabaseHelper.setupDatabase();
         TagItem.initiateItem();
 
@@ -57,6 +59,8 @@ public class Tag extends JavaPlugin implements ScoreboardHook {
             });
 
             gameRunning = true;
+            getConfig().set("tag.game-running", gameRunning);
+            saveConfig();
         }
     }
 
@@ -68,6 +72,8 @@ public class Tag extends JavaPlugin implements ScoreboardHook {
             biomeChat.restartScoreboardTask();
 
             gameRunning = false;
+            getConfig().set("tag.game-running", gameRunning);
+            saveConfig();
         }
     }
 

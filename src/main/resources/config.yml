@@ -6,3 +6,5 @@ mysql:
   username: biometag
   password: password
   useSSL: false
+tag:
+  game-running: false
