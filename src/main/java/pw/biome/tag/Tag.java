@@ -86,6 +86,8 @@ public class Tag extends JavaPlugin implements ScoreboardHook {
                             TagPlayer tagPlayer = TagPlayer.getFromUUID(player.getUniqueId());
                             Corp corp = Corp.getCorpForUser(player.getUniqueId());
 
+                            player.setPlayerListHeader(ChatColor.BLUE + "Biome");
+
                             boolean afk = tagPlayer.isAFK();
 
                             int amountOfTimeTagged = tagPlayer.getAmountOfTimeTagged() / 60;
